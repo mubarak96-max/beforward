@@ -1,0 +1,42 @@
+$(function() {
+    $('.fn-language-change').on('change', function(){
+        // GA Event
+        window.dataLayer.push({
+            'event':'ga_event',
+            'event_cat':'sp_menu',
+            'event_act':'select',
+            'event_lab':'sp_menu_language',
+            'event_val':1,
+            'event_non_int':true
+        });
+        console.log(window.dataLayer);
+    });
+    $('.fn-language-change-form').on('change', '.fn-language-change', function(){
+        var href = window.location.href;
+
+        // URLドメイン以降を抽出
+        var url_param = href.substring(href.indexOf(document.domain) + document.domain.length + 1, href.length);
+        var url = '';
+
+        for(var i = 0; i < enable_lang.length; i++) {
+          // 有効な言語を確認
+          if(href.indexOf("/" + enable_lang[i] +"/") !== -1) {
+            // 表示言語設定が英語以外に設定されている場合、urlからlang以降の部分を取得
+            url_param = url_param.substring(url_param.indexOf("/" + enable_lang[i]) + ("/"+enable_lang[i]).length + 1, url_param.length);
+          } else if(href.indexOf("/" + enable_lang[i]) !== -1) {
+            // トップページで/frのようにスラッシュで終わっていない場合
+            url_param = url_param.substring(url_param.indexOf("/" + enable_lang[i]) + (enable_lang[i]).length + 1, url_param.length);
+          }
+        }
+
+        var lang = $('.fn-language-change').val();
+
+        // 表示言語のurlパラメータを挿入してリダイレクト
+        if(lang == 'en') {
+          url = "//" + document.domain + "/" + url_param;
+        } else {
+          url = "//" + document.domain + "/" + lang + "/" + url_param;
+        }
+        location.href = url;
+    });
+});

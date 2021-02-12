@@ -1,0 +1,27 @@
+/**
+ * 亜なりティクス系のイベント用
+ */
+$(function() {
+    var ga_cookie = ga_cookie_check();
+    if (ga_cookie == true) {
+        window.dataLayer.push({ 'event': 'ga_event','event_cat' : 'Sp_Front','event_act' : 'ShowPage','event_lab' : 'Repeater','event_val' : 0, 'event_non_int' : true });
+    } else {
+        window.dataLayer.push({ 'event': 'ga_event','event_cat' : 'Sp_Front','event_act' : 'ShowPage','event_lab' : 'First_Visitor','event_val' : 0, 'event_non_int' : true });
+    }
+
+    // _ga cookie有無確認
+    function ga_cookie_check() {
+        var cookies = document.cookie.split('; ');
+        var cookies_length = cookies.length;
+        var result = false;
+        for(var i = 0; i < cookies_length; i++){
+            var str = cookies[i].split("=");
+            if(str[0] == '_ga'){
+                result = true;
+                break;
+            }
+        }
+        return result;
+    }
+
+});

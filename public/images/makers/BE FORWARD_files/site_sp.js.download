@@ -1,0 +1,510 @@
+$(function() {
+	setHeaderHeight();
+	setSpNav();
+	externalLink();
+	smoothScroll();
+	showMore();
+	showMoreitems();
+	measuresAccordion();
+
+	$('a[href^=#]').click(function() {
+		var speed = 400;
+		var href= $(this).attr("href");
+		var target = $(href == "#" || href == "" ? 'html' : href);
+		if(target.length <= 0){
+			return true;
+		}
+		var position = target.offset().top;
+		if($(this).hasClass('is-header-adjustment')){
+			position = position - 60;
+		}
+		$('body,html').animate({scrollTop:position}, speed, 'swing');
+		return false;
+	});
+
+});
+
+/* externalLink
+============================================================================================================ */
+function externalLink() {
+	var notBlank = new Array();
+
+	var n = "";
+	for (var i = 0; i < notBlank.length; i ++) if(notBlank[i]) n += ":not([href*='" + notBlank[i] + "'])";
+	if(document.domain) n += ":not([href*='" + document.domain + "'])";
+	n += ":not([target])";
+
+	$("a[rel='external'], a[href$='.pdf']").attr("target", "_blank");
+	$("a[href^=http]:not([href*='https://mypage.beforward.jp/clients/'])"+n).attr("target", "_blank");
+	$("#header a[href*='/bookmark'], #header a[href*='/quotelist']").removeAttr("target");
+	$("#gn-sign-in-content a").removeAttr("target");
+	$("#nav_scroll a").removeAttr("target");
+	$("#header-menu-contents #nav_scroll_menu a:not(.link_blank)").removeAttr("target");
+	$(".global-category-nav-wrap .global-category-nav a").removeAttr("target");
+    $(".favorite-reached-a-limit-description a").removeAttr("target");
+}
+
+/* smoothScroll
+============================================================================================================ */
+function smoothScroll() {
+	$('a[href^="#"][data-type=smooth], a[href^="' + location.pathname + '#"][data-type=smooth], area[href^="#"][data-type=smooth]').each (function(){
+		var hash = this.hash;
+		if(hash.length > 1 && !this['rel']){
+			$(this).click(function() {
+				goScroll(hash);
+				return false;
+			})
+		}
+	});
+}
+
+/* goScroll
+============================================================================================================ */
+function goScroll(hash, time, offset) {
+	var target = $(hash).offset().top;
+	if(time == undefined) time = 1000;
+	if(!offset) offset = 0;
+	if(hash == '#wrap', '#wrap_make') target = 0;
+
+	$('body,html').stop()
+	.animate({
+		scrollTop: target >= offset ? target - offset : target
+	})
+	.bind("mousewheel DOMMouseScroll",function(){
+		$(this).queue([]).stop();
+		$(this).unbind("mousewheel DOMMouseScroll");
+	});
+}
+
+/* setSpNav
+============================================================================================================ */
+function setSpNav() {
+	$('body').append('<div id="modal-overlay"></div>');
+	var $overlay = $('#modal-overlay');
+
+	// サイドメニューのスクロール部分の高さを調整する
+	function fixSideMenuScrollHeight(){
+		if (Object.prototype.toString.call(window.operamini) !== "[object OperaMini]") {
+			var ot;
+			$('#header-menu-contents .scrollable').each(function(){
+				ot = this.offsetTop;
+				if(this.offsetParent != undefined){
+					ot = ot + this.offsetParent.offsetTop;
+				}
+				$(this).height(window.innerHeight - ot);
+			});
+		}
+	}
+	$(window).resize(function(){
+		fixSideMenuScrollHeight();
+		setHeaderHeight();
+	});
+
+	// メインコンテンツのスクロール制御
+	function toggleMainContentScroll(tgl){
+		var $no_scroll_target = $('#modal-overlay, #wrap');
+		var $fix_target = $('body');
+		if(tgl){
+			// スクロール許可
+			$no_scroll_target.off('.noScroll');
+			$fix_target.css('position', '').css('overflow', '');
+		}else{
+			// スクロール禁止
+			$no_scroll_target.on('touchmove.noScroll', function(e) {
+				e.preventDefault();
+			});
+			$fix_target.css('position', 'fixed').css('overflow', 'hidden');
+		}
+	}
+
+	// ハンバーガー第一階層のスクロール制御
+	function toggleMenuFirstFloorScroll(tgl){
+		var $target = $('#nav_scroll_menu > .scrollable');
+		if(tgl){
+			$target.css('overflow-y', '');
+		}else{
+			$target.css('overflow-y', 'visible');
+		}
+	}
+
+	// ハンバーガー第一階層オープン
+	$('#header nav #local-nav-trigger a').click(function(){
+		$overlay.show();
+		fixSideMenuScrollHeight();
+		$('.toggle-nav.menu').removeClass('close').addClass('open');
+		$('.account-form').removeClass('open').addClass('close');
+
+		// スクロール禁止
+		toggleMainContentScroll(false);
+
+		return false;
+	});
+
+	// ハンバーガー第一階層クローズ
+	$('#header-menu-contents #nav_scroll_menu .menu-close .icon-close').click(function(){
+		$overlay.hide();
+		$('.toggle-nav.menu').removeClass('open').addClass('close');
+
+		// 内部要素の全ての開閉状態をクリアする
+		$('.toggle-nav.menu li').removeClass('open').removeClass('close');
+
+		// スクロール許可
+		toggleMainContentScroll(true);
+		toggleMenuFirstFloorScroll(true)
+
+		return false;
+	});
+	// メニュー部分以外の領域をクリックしたときにクローズする
+	$overlay.click(function(){
+		$('#header-menu-contents #nav_scroll_menu .menu-close .icon-close').trigger('click');
+		$('#header-menu-contents .account-form .menu-close .icon-close').trigger('click');
+	});
+
+	// ハンバーガー第一階層アコーディオンメニュー
+	$('.down_open_link').click(function(){
+		if($(this).next('.down_open_list').is(':visible')){
+			// 閉じる
+			$(this).next('.down_open_list').slideUp();
+			$(this).removeClass('open');
+			return false;
+		}else{
+			// 開く
+			$(this).addClass('open');
+			$(this).next('.down_open_list').slideDown();
+			return false;
+		}
+	});
+
+	// ハンバーガー第二階層オープン
+	$('.right_open_link a').click(function(){
+		fixSideMenuScrollHeight();
+		$(this).parent('li').next('.right_open_list').removeClass('close').addClass('open');
+
+		 // スクロール禁止
+		setTimeout(function(){
+			toggleMenuFirstFloorScroll(false);
+		}, 500);
+
+		return false;
+	});
+	// ハンバーガー第二階層クローズ
+	$('.right_open_list .back a').click(function(){
+
+		// スクロール許可
+		toggleMenuFirstFloorScroll(true);
+
+		$(this).parent('li').parent('ul').parent('.right_open_list').removeClass('open').addClass('close');
+
+		return false;
+	});
+
+	// Accountメニューオープン
+	$('#header nav #sign-in a, #header nav #sign-out a').click(function(){
+		$overlay.show();
+		fixSideMenuScrollHeight();
+		$('.account-form').removeClass('close').addClass('open');
+		$('.toggle-nav.menu').removeClass('open').addClass('close');
+
+		// スクロール禁止
+		toggleMainContentScroll(false);
+
+		return;
+	});
+	// Accountメニュークローズ
+	$('#header-menu-contents .account-form .menu-close .icon-close').click(function(){
+		$overlay.hide();
+		$('.account-form').removeClass('open').addClass('close');
+
+		// スクロール許可
+		toggleMainContentScroll(true);
+		toggleMenuFirstFloorScroll(true)
+
+		return;
+	});
+}
+
+/* header banner 201608
+============================================================================================================ */
+
+// ヘッダーを固定とし、コンテンツの表示位置を調整する
+function setHeaderHeight(){
+	if(320 < window.innerWidth ){
+		if (!(($(".is-stocklist-page").length) || ($("#vehicle-photo-slider").length) || ($("#order").length))){
+			// Stocklist、車両詳細またはOrder以外は、ヘッダーを固定する
+			$('#header').css('position','fixed');
+			$("#content").css("padding-top", $('#header').outerHeight(true));
+		}
+	}else{
+		if(!($("#order").length)){
+			$('#header').css('position','');
+			$('#content').css('padding-top',0);
+		}
+	}
+}
+
+//Choose Your Delivery Options時
+if($("#header.orders-header #campaign_header_banner").length){
+	$("#header").addClass("campaign_header_banner_padding");
+	$("#header").css("position","static");
+	$("#content").css("padding","0");
+};
+
+var UNDER_OFFER_TIMER = UNDER_OFFER_TIMER || {};
+UNDER_OFFER_TIMER.baseDate = new Date();
+
+/* カウントダウンタイマー */
+function underOfferCountDownTimer(selector) {
+	$(selector).each(function() {
+		var functionTime = new Date();
+		var $this = $(this);
+		var remainTime = $this.attr('data-seconds-left');
+		var timeDiff = Math.floor((functionTime - UNDER_OFFER_TIMER.baseDate)/1000);
+
+		remainTime -= timeDiff;
+
+		var remainHour = '00';
+		var remainMinute = '00';
+		var remainSecond = '00';
+
+		if (remainTime > 0) {
+			remainHour = ('0'+(Math.floor(remainTime/3600))).slice(-2);
+			remainMinute = ('0'+(Math.floor(remainTime/60)%60)).slice(-2);
+			remainSecond = ('0'+(Math.floor(remainTime)%60%60)).slice(-2);
+		}
+
+		$this.find('.jst-hours').html(remainHour);
+		$this.find('.jst-minutes').html(remainMinute);
+		$this.find('.jst-seconds').html(remainSecond);
+	});
+
+	setTimeout(function(){(underOfferCountDownTimer(selector))}, 1000);
+}
+
+/* showMore
+============================================================================================================ */
+function showMore() {
+	var ul = $('.type-list.is-make');
+	ul.each( function() {
+		var li = $('li:gt(' + (($(this).data('defaultShow')|| 6) - 1) + ')', this),
+			btn = $(this).next();
+		li.hide()
+		btn.on('click', function() {
+			$(this).remove();
+			li.slideToggle('fast');
+		});
+	})
+}
+
+function showMoreitems() {
+	$(function() {
+		$('.list-more-link').click(function(){
+			$('.items.items-list').css('max-height', '200px');
+			$('.items-list-more').css('display','none');
+		});
+	});
+}
+
+//Header下部COVID19注意喚起文言のアコーディオン
+function measuresAccordion() {
+	$('.fn-measures-accordion').on('click',function(){
+		$('.measures-desc').slideToggle(100, function (){
+			$('.measures-desc').toggleClass('is-open');
+		});
+		$(this).find('i').toggleClass('icon-up-open icon-down-open');
+	});
+}
+
+function countBuyNow(){
+
+	var $deferred = $.ajax({
+		url: '/ajax/count_buy_now/',
+		dataType: 'json',
+		cache: false,
+		type: 'POST',
+		global: false
+	});
+
+	$deferred.done(function(data){
+		$('.fn-buynow-count').text(data.buy_now.issuable_count);
+		$('.fn-fav-buynow-nav').show();
+		$('.toggle-nav .fn-buynow-count').css('display','inline-block');
+	});
+
+}
+
+/* checkPushState
+============================================================================================================ */
+function checkPushState() {
+
+	var current_page_num = 1;
+	var params = location.pathname.split('/');
+	for (var i = 0; i < params.length; i++) {
+		if (params[i].indexOf('page=') != -1) {
+			current_page_num = parseInt(params[i].replace('page=', ''), 10);
+			break;
+		}
+	}
+
+	$('ul[data-page]').each(function() {
+		var data_page = $(this).attr('data-page');
+		var data_url  = $(this).attr('data-url');
+		if (data_page != current_page_num && mostlyVisible(this)) {
+			history.pushState(null, null, data_url);
+			setRelTag(data_page, data_url);
+			return false;
+		}
+	});
+}
+
+/* mostlyVisible
+============================================================================================================ */
+function mostlyVisible(element) {
+	// if ca 25% of element is visible
+	var scroll_pos = $(window).scrollTop();
+	var window_height = $(window).height();
+	var el_top = $(element).offset().top;
+	var el_height = $(element).height();
+	var el_bottom = el_top + el_height;
+	return ((el_bottom - el_height * 0.25 > scroll_pos) && (el_top < (scroll_pos + window_height * 0.5)));
+}
+
+/* pushState
+============================================================================================================ */
+function pushState(page_num) {
+	var data_url = $('ul[data-page][data-page=' + page_num + ']').attr('data-url');
+	history.pushState(null, null, data_url);
+	setRelTag(page_num, data_url);
+}
+
+/* setRelTag
+============================================================================================================ */
+function setRelTag(page_num, data_url) {
+
+	// Check Language
+	var lang = $('input[name=view_lang]').val();
+	var add_lang_url = '';
+	if (lang != 'en') {
+		add_lang_url = '/' + lang;
+	}
+
+	// Update Canonical URL
+	var canonical_url = $('link[rel=canonical]').attr('href');
+	var set_params = '';
+	if ($('#canonical_base_params').length) {
+		set_params = $('#canonical_base_params').val();
+	} else {
+		var canonical_param_list = canonical_url.split('/stocklist')[1].split('/');
+		var set_param_list = [];
+		for (var i = 0; i < canonical_param_list.length; i++) {
+			if (canonical_param_list[i] !== '' && canonical_param_list[i].indexOf('page=') === -1) set_param_list.push(canonical_param_list[i]);
+		}
+		set_params = set_param_list.join('/');
+	}
+	$('link[rel=canonical]').attr('href', canonical_url.split('/stocklist')[0] + createDataUrl(page_num, set_params));
+
+	// Update Alternate URL
+	var alternate_param_url = createDataUrl(page_num);
+	$('link[rel=alternate]').each(function() {
+		$(this).attr('href', $(this).attr('href').split('/stocklist')[0] + alternate_param_url);
+	});
+
+	// Update Prev URL
+	var prev_page_num = parseInt(page_num) - 1;
+	if (prev_page_num == 0) {
+		$('link[rel=prev]').remove();
+	} else {
+		if (!$('link[rel=prev]').length) {
+			$('link[rel=next]').after('<link rel="prev">');
+		}
+
+		$('link[rel=prev]').attr('href', add_lang_url + createDataUrl(prev_page_num));
+	}
+
+	// Update Next URL
+	var next_page_num = parseInt(page_num) + 1;
+	if (next_page_num >= $('#id-count-total').val()) {
+		$('link[rel=next]').remove();
+	} else {
+		if (!$('link[rel=next]').length) {
+			$('link[rel=prev]').before('<link rel="next">');
+		}
+
+		$('link[rel=next]').attr('href', add_lang_url + createDataUrl(next_page_num));
+	}
+}
+
+/* createDataUrl
+============================================================================================================ */
+function createDataUrl(pageNum, set_params) {
+
+	var set_data_url = '/stocklist';
+
+	// Argument Check
+	var set_params = typeof set_params !== 'undefined' ? set_params : $('#id-infinity-loading-data-url-params').val();
+
+	// Parameter Check
+	var set_param_list = [];
+	if (set_params != '') set_param_list = set_params.split('/');
+
+	// Page Chekck
+	if (pageNum != 1) set_param_list.push('page=' + pageNum);
+
+	// Sort
+	set_param_list.sort();
+
+	if (set_param_list.length != 0) set_data_url += '/' + set_param_list.join('/');
+
+	return set_data_url;
+}
+
+/* setScrollTop
+============================================================================================================ */
+function setScrollTop() {
+
+	// Set Scroll Event Iimitation
+	$('#scroll_event_limitation').val(1);
+
+	var filterBtnShowPosition;
+	var showThresholdPosition;
+	var $resultController = $('.result-controller');
+
+	if ($resultController.length) {
+		filterBtnShowPosition = $('.result-controller').offset().top + $('.result-controller').height();
+		if (window.innerHeight > window.innerWidth) {
+			showThresholdPosition = Math.ceil(filterBtnShowPosition - $('#header').height());
+		}else{
+			showThresholdPosition = Math.ceil(filterBtnShowPosition);
+		}
+
+		$(window).scrollTop(showThresholdPosition);
+	}
+}
+
+$('.buynow-button-area').on('click', 'a', function(){
+	var input_buynow_link = $(this).data('link');
+	var data = [];
+	data['veh_id'] = $(this).data('veh');
+	data['quotation_id'] = $(this).data('inq');
+	execBuyNow(input_buynow_link, data);
+});
+
+function execBuyNow(action, data) {
+	// フォームの生成
+	var form = document.createElement("form");
+	form.setAttribute("action", action);
+	form.setAttribute("method", "post");
+	form.style.display = "none";
+	document.body.appendChild(form);
+	// パラメータの設定
+	if (data !== undefined) {
+		for (var paramName in data) {
+			var input = document.createElement('input');
+			input.setAttribute('type', 'hidden');
+			input.setAttribute('name', paramName);
+			input.setAttribute('value', data[paramName]);
+			form.appendChild(input);
+		}
+	}
+	// submit
+	form.submit();
+};
